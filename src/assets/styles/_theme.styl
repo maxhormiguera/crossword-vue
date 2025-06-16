@@ -1,0 +1,43 @@
+$transition-speed = 0.8s
+:root
+  @property --base-color {
+    syntax "<color>"
+    inherits true
+    initial-value #fef2f2
+  }
+  @property --theme-color {
+    syntax "<color>"
+    inherits true
+    initial-value #ed806c
+  }
+  @property --accent-color {
+    syntax "<color>"
+    inherits true
+    initial-value #c6a05a
+  }
+  @property --text-main-color {
+    syntax "<color>"
+    inherits true
+    initial-value #2b2b2b
+  }
+  @property --text-inverse-color {
+    syntax "<color>"
+    inherits true
+    initial-value #efefef
+  }
+  @property --border-main-color {
+    syntax "<color>"
+    inherits true
+    initial-value #2b2b2b
+  }
+  @property --panel-color {
+    syntax "<color>"
+    inherits true
+    initial-value #fffff0
+  }
+
+
+
+*
+  transition background-color $transition-speed, color $transition-speed, border-color $transition-speed, box-shadow $transition-speed, outline-color $transition-speed
+

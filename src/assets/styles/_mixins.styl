@@ -1,0 +1,150 @@
+transform()
+  -webkit-transform arguments /* Safari & Chrome */
+  -moz-transform arguments /* Firefox */
+  transform arguments /* W3C */
+
+mask($url, $size = contain, $color = $color-text-main)
+  -webkit-mask url($url)
+  mask url($url)
+  -webkit-mask-size $size
+  mask-size $size
+  -webkit-mask-repeat no-repeat
+  mask-repeat no-repeat
+  -webkit-mask-position center
+  mask-position center
+  background-color $color
+
+noselect()
+  -webkit-touch-callout none // iOS Safari
+  -webkit-user-select none // Safari
+  -khtml-user-select none // Konqueror HTML
+  -moz-user-select none // Old versions of Firefox
+  -ms-user-select none // Internet Explorer/Edge
+  user-select none // Non-prefixed version, currently supported by Chrome, Opera and Firefox
+
+positioning($position, $top = false, $right = null, $bottom = false, $left = false)
+  position $position
+  if ($top || $top is 0) and $top isnt false
+    top $top
+  if ($right || $right is 0) and $right isnt false
+    right $right
+  if ($bottom || $bottom is 0) and $bottom isnt false
+    bottom $bottom
+  if ($left || $left is 0) and $left isnt false
+    left $left
+
+width-height($w, $h = $w)
+  width $w
+  height $h
+
+media-screen($min = false, $max = false)
+  if $min && $max
+    @media only screen and (min-width : $min) and (max-width : $max - 1)
+      { block }
+  else if $min and !$max
+    @media only screen and (min-width : $min)
+      { block }
+  else if !$min and $max
+    @media only screen and (max-width : $max - 1)
+      { block }
+
+flexbox($align = false, $justify = false, $direction = false, $gap = false, $wrap = false,  $inline = false)
+  if ($inline == true || $inline == 'inline') and $inline isnt false
+    display inline-flex
+  else
+    display flex
+  if $justify
+    justify-content $justify
+  if $align
+    align-items $align
+  if $direction
+    flex-direction $direction
+  if $wrap
+    flex-wrap $wrap
+  if ($gap || $gap is 0) and $gap isnt false
+    gap $gap
+
+gradient-color()
+  $direction = shift(arguments)
+  background arguments[0][0]
+  background -webkit-linear-gradient(left, arguments)
+  background linear-gradient(to right, arguments)
+  if $direction == 'radial'
+    background -webkit-radial-gradient(center, ellipse cover, arguments)
+    background radial-gradient(ellipse at center, arguments);
+  else if $direction == 'vertical'
+    background -webkit-linear-gradient(top, arguments)
+    background linear-gradient(to bottom, arguments)
+  else if $direction == 'horizontal'
+    background -webkit-linear-gradient(left, arguments)
+    background linear-gradient(to right, arguments)
+  else if $direction == 'slash'
+    background linear-gradient(to bottom right, arguments)
+  else if $direction == 'backslash'
+    background linear-gradient(to bottom left, arguments)
+
+// for transitioning gradients, use pseudo-elements and transition opacity
+
+bg-image($url, $size = cover, $position = center, $repeat = no-repeat, $color = null)
+  background-image url($url)
+  background-size $size
+  background-position $position
+  background-repeat $repeat
+  if $color
+    background-color $color
+
+scrollbar($horizontal = false, $color-thumb = $accent-color, $width-thumb = 0.5rem, $border-radius-thumb = $border-radius-md, $color-track = $accent-color, $box-shadow-track = inset 0 0 0.5rem rgba(#000, 0.5), $behavior = smooth, $padding = 0, $margin = 0)
+  if $horizontal
+    overflow auto hidden
+  unless $horizontal
+    overflow hidden auto
+  scrollbar-color $color-thumb $color-track
+  scrollbar-width auto
+  scrollbar-width thin
+  scrollbar-gutter $width-thumb
+  scroll-behavior $behavior
+  scroll-padding $padding
+  scroll-margin $margin
+  &::-webkit-scrollbar
+    background-color $color-track
+    width $width-thumb
+    height $width-thumb
+  &::-webkit-scrollbar-thumb
+    border-radius $border-radius-thumb
+    background-color $color-thumb
+  &::-webkit-scrollbar-track
+    background-color $color-track
+    box-shadow $box-shadow-track
+
+line-limit($limit = 1)
+  overflow hidden
+  display -webkit-box
+  -webkit-line-clamp $limit
+  -webkit-box-orient vertical
+
+blend-color($color1 = #000, $color2 = #fff, $amt = 50%)
+  'color-mix(in srgb, %s, %s %s)' % ($color1 $color2 $amt)
+
+on-circle($item-count = 6, $circle-size = 5rem, $item-size = 0.5rem)
+  position relative
+  width $circle-size
+  height $circle-size
+  padding 0
+  border-radius 50%
+  list-style none
+  > *
+    display block
+    position absolute
+    top 50%
+    left 50%
+    width $item-size
+    height $item-size
+    margin -($item-size / 2)
+
+    $angle = (360 / $item-count)
+    $rot = 0
+
+    for $i in (1..$item-count)
+      &:nth-of-type({$i})
+        transform rotate($rot * 1deg) translate($circle-size/2)
+      $rot = ($rot + $angle)
