@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import {onMounted} from "vue";
+import {onMounted, ref} from "vue";
+import Toolbar from "@/components/toolbar.vue";
 
 const { width, height, tileSize } = defineProps({
   width: { type: Number, default: 6 },
@@ -38,7 +39,7 @@ const blackTiles = [
   { x: 1, y: 9 },
   { x: 6, y: 9 },
 ] // this set of black squares is temporary
-let direction:'vertical' | 'horizontal' = 'horizontal'
+const direction = ref<String>('horizontal')
 let selectedWord:{x:number, y:number}[] = []
 
 class Tile {
@@ -81,7 +82,7 @@ onMounted(() => {
     canvas.addEventListener('click', (evt: MouseEvent) => {
       const pos = getPos(evt, canvas)
       if (Active.x == pos.x && Active.y == pos.y) {
-        direction = direction === 'horizontal' ? 'vertical' : 'horizontal'
+        direction.value = direction.value === 'horizontal' ? 'vertical' : 'horizontal'
       }
       Active.x = pos.x
       Active.y = pos.y
@@ -91,22 +92,37 @@ onMounted(() => {
       drawBackGround (canvas, ctx)
     })
 
+    canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
+      const key = evt.key
+      console.log('::: key ', key)
+      drawText(canvas, ctx, key)
+    })
+
   }
 })
+
+function drawText(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|null, text:string) {
+  console.log('::: text')
+  if (!ctx) return
+  ctx.font = "32px sans-serif"
+  ctx.fillStyle = '#000000'
+  ctx.fillText(text.toUpperCase(), (Active.x * tileSize) + (tileSize*0.2575), (Active.y * tileSize) + (tileSize*0.85))
+}
 
 function findWord() {
   getTileState(Active.x, Active.y)
   let foreTiles = []
   let backTiles = []
 
-  if (direction == 'horizontal') {
+  if (direction.value == 'horizontal') {
     for(let rx = Active.x; getTileState(rx, Active.y) != 'blocked' && rx < width; rx++) {
       foreTiles.push({x: rx, y: Active.y})
     }
     for(let rx = Active.x-1; getTileState(rx, Active.y) != 'blocked' && rx >= 0; rx--) {
       backTiles.unshift({x: rx, y: Active.y})
     }
-  } else {
+  }
+  else {
     for(let ry = Active.y; getTileState(Active.x, ry) != 'blocked' && ry < height; ry++) {
       foreTiles.push({x: Active.x, y: ry})
     }
@@ -115,7 +131,7 @@ function findWord() {
     }
   }
   if (foreTiles.length == 1 && backTiles.length < 1) {
-    direction = direction == 'vertical' ? 'horizontal' : 'vertical'
+    direction.value = direction.value == 'vertical' ? 'horizontal' : 'vertical'
     return findWord()
   }
   return [...foreTiles, ...backTiles].sort((a,b) => a.x - b.x)
@@ -167,11 +183,13 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   Active.draw()
 }
 
+
 </script>
 
 <template>
   <div class="tileset">
-    <canvas :width="canvasSize.width" :height="canvasSize.height" id="tileset" />
+    <toolbar :direction="direction" />
+    <canvas :width="canvasSize.width" :height="canvasSize.height" id="tileset" tabindex="0" />
   </div>
 
 </template>
