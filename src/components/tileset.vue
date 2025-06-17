@@ -37,7 +37,9 @@ const blackTiles = [
   { x: 0, y: 9 },
   { x: 1, y: 9 },
   { x: 6, y: 9 },
-]
+] // this set of black squares is temporary
+let direction:'vertical' | 'horizontal' = 'horizontal'
+let selectedWord:{x:number, y:number}[] = []
 
 class Tile {
   constructor(public ctx:CanvasRenderingContext2D|null,
@@ -52,30 +54,77 @@ class Tile {
   draw () {
     if (this.ctx) {
       this.ctx.lineWidth = 2
-      this.ctx.strokeStyle = '#f6a05a'
+      this.ctx.strokeStyle = this.state == 'hover' ? '#f6a05a' : '#fd806c'
       this.ctx.strokeRect((this.x * tileSize) + 1, (this.y * tileSize) + 1, tileSize, tileSize)
     }
   }
 }
 
-let Cursor = new Tile(null, cursorTile.x, cursorTile.y, 'hover')
+const Cursor = new Tile(null, cursorTile.x, cursorTile.y, 'hover')
+const Active = new Tile(null, cursorTile.x, cursorTile.y, 'active')
 
 onMounted(() => {
   const canvas = document.getElementById('tileset') as HTMLCanvasElement
   if (canvas.getContext) {
     const ctx = canvas.getContext('2d')
     Cursor.ctx = ctx
+    Active.ctx = ctx
     drawBackGround(canvas, ctx)
 
     canvas.addEventListener('mousemove', (evt: MouseEvent) => {
       const pos = getPos(evt, canvas)
-      drawBackGround (canvas, ctx)
       Cursor.x = pos.x
       Cursor.y = pos.y
+      drawBackGround (canvas, ctx)
+    })
+
+    canvas.addEventListener('click', (evt: MouseEvent) => {
+      const pos = getPos(evt, canvas)
+      if (Active.x == pos.x && Active.y == pos.y) {
+        direction = direction === 'horizontal' ? 'vertical' : 'horizontal'
+      }
+      Active.x = pos.x
+      Active.y = pos.y
+      if (getTileState(Active.x, Active.y) !== 'blocked') {
+        selectedWord = findWord()
+      }
+      drawBackGround (canvas, ctx)
     })
 
   }
 })
+
+function findWord() {
+  getTileState(Active.x, Active.y)
+  let foreTiles = []
+  let backTiles = []
+
+  if (direction == 'horizontal') {
+    for(let rx = Active.x; getTileState(rx, Active.y) != 'blocked' && rx < width; rx++) {
+      foreTiles.push({x: rx, y: Active.y})
+    }
+    for(let rx = Active.x-1; getTileState(rx, Active.y) != 'blocked' && rx >= 0; rx--) {
+      backTiles.unshift({x: rx, y: Active.y})
+    }
+  } else {
+    for(let ry = Active.y; getTileState(Active.x, ry) != 'blocked' && ry < height; ry++) {
+      foreTiles.push({x: Active.x, y: ry})
+    }
+    for(let ry = Active.y-1; getTileState(Active.x, ry) != 'blocked' && ry >= 0; ry--) {
+      backTiles.unshift({x: Active.x, y: ry})
+    }
+  }
+  if (foreTiles.length == 1 && backTiles.length < 1) {
+    direction = direction == 'vertical' ? 'horizontal' : 'vertical'
+    return findWord()
+  }
+  return [...foreTiles, ...backTiles].sort((a,b) => a.x - b.x)
+}
+
+function getTileState (x: number, y: number) {
+  const isBlocked = blackTiles.findIndex(tile => tile.x === x && tile.y === y)
+  return isBlocked !== -1 ? 'blocked' : 'letter'
+}
 
 function getPos(evt: MouseEvent, canvas: HTMLCanvasElement) {
   return {
@@ -107,7 +156,15 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   })
   // draw the empty black tiles -- e
 
+  // draw the selected word tiles -- s
+  selectedWord.forEach(tile => {
+    ctx.fillStyle = '#00aa0044'
+    ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
+  })
+  // draw the empty black tiles -- e
+
   Cursor.draw()
+  Active.draw()
 }
 
 </script>
