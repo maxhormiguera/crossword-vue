@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import Icon from "@/components/icon.vue";
 
-const { direction } = defineProps({
-  direction: { type: String, default: "horizontal" },
+const { horizontal } = defineProps({
+  horizontal: { type: Boolean, default: true },
 })
 </script>
 
 <template>
 <div class="toolbar">
-  <icon :class="['direction-icon', `--${direction}`]" name="double-arrow" size="1.4rem" />
+  <icon :class="['direction-icon', `--${horizontal ? 'horizontal':'vertical'}`]" name="double-arrow" size="1.4rem" />
   <button type="button" class="hint-btn">Hint</button>
 </div>
 </template>

@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
+import {computed, eagerComputed, onMounted, reactive, ref} from "vue";
 import Toolbar from "@/components/toolbar.vue";
+
+interface Tile {
+  x: number, y: number, value: string
+}
 
 const { width, height, tileSize } = defineProps({
   width: { type: Number, default: 6 },
@@ -8,39 +12,23 @@ const { width, height, tileSize } = defineProps({
   tileSize: { type: Number, default: 40 },
 })
 let canvasSize = { width: (tileSize * width) + 2, height: (tileSize * height) + 2 }
+let cwTiles:Tile[] = reactive((() => {
+  const tiles = []
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      tiles.push({ x: x, y: y, value: '' });
+    }
+  }
+  return tiles
+})())
 let cursorTile = { x: 0, y: 0 }
-const blackTiles = [
-  { x: 0, y: 1 },
-  { x: 1, y: 1 },
-  { x: 2, y: 1 },
-  { x: 5, y: 1 },
-  { x: 7, y: 1 },
-  { x: 1, y: 2 },
-  { x: 2, y: 2 },
-  { x: 7, y: 2 },
-  { x: 7, y: 3 },
-  { x: 4, y: 3 },
-  { x: 5, y: 3 },
-  { x: 1, y: 4 },
-  { x: 7, y: 4 },
-  { x: 1, y: 5 },
-  { x: 2, y: 5 },
-  { x: 3, y: 5 },
-  { x: 4, y: 5 },
-  { x: 6, y: 5 },
-  { x: 7, y: 5 },
-  { x: 1, y: 6 },
-  { x: 3, y: 6 },
-  { x: 6, y: 6 },
-  { x: 3, y: 8 },
-  { x: 4, y: 8 },
-  { x: 6, y: 8 },
-  { x: 0, y: 9 },
-  { x: 1, y: 9 },
-  { x: 6, y: 9 },
-] // this set of black squares is temporary
-const direction = ref<String>('horizontal')
+const blackTiles = computed(() => {
+  return cwTiles.filter(tile => tile.value == ' ')
+})
+const horizontal = ref<Boolean>(true)
 let selectedWord:{x:number, y:number}[] = []
+
+console.log('::::: tiles ', cwTiles[0])
 
 class Tile {
   constructor(public ctx:CanvasRenderingContext2D|null,
@@ -82,64 +70,78 @@ onMounted(() => {
     canvas.addEventListener('click', (evt: MouseEvent) => {
       const pos = getPos(evt, canvas)
       if (Active.x == pos.x && Active.y == pos.y) {
-        direction.value = direction.value === 'horizontal' ? 'vertical' : 'horizontal'
+        horizontal.value = !horizontal.value
       }
       Active.x = pos.x
       Active.y = pos.y
-      if (getTileState(Active.x, Active.y) !== 'blocked') {
+      if (getTileValue(Active.x, Active.y) !== 'blocked') {
         selectedWord = findWord()
       }
       drawBackGround (canvas, ctx)
     })
 
     canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
-      if (evt.code === `Key${evt.key.toUpperCase()}`) {
-
+      const thisTile: Tile | undefined = cwTiles.find(({x, y}) => Active.x === x && Active.y === y)
+      console.log('::: evt.code ', evt.code)
+      if (!thisTile) return // tile not found
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) {
+        const nextTile = evt.code === 'ArrowLeft' ? {x: (Active.x - 1), y: Active.y} :
+          evt.code === 'ArrowRight' ? { x: (Active.x + 1), y: Active.y } :
+          evt.code === 'ArrowUp' ? {x: Active.x, y: (Active.y - 1)} :
+            {x: Active.x, y: (Active.y + 1)}
+        const nextTileValue = getTileValue(nextTile.x, nextTile.y)
+        if (nextTileValue || nextTileValue === '') {
+          Active.x = nextTile.x
+          Active.y = nextTile.y
+        }
+      } else if (evt.code === 'Space') {
+        thisTile.value = ' '
+      } else if (evt.code === `Key${evt.key.toUpperCase()}`) {
+        thisTile.value = evt.key.toUpperCase()
         moveTypingCursor()
-        drawBackGround (canvas, ctx)
       }
+      drawBackGround(canvas, ctx)
     })
   }
 })
 
 function moveTypingCursor() {
   console.log('::: selectedWord ', selectedWord)
-  if (direction.value === 'horizontal') {
+  if (horizontal.value) {
 
   }
 }
 
 function findWord() {
-  getTileState(Active.x, Active.y)
+  getTileValue(Active.x, Active.y)
   let foreTiles = []
   let backTiles = []
 
-  if (direction.value == 'horizontal') {
-    for(let rx = Active.x; getTileState(rx, Active.y) != 'blocked' && rx < width; rx++) {
+  if (horizontal.value) {
+    for(let rx = Active.x; getTileValue(rx, Active.y) != 'blocked' && rx < width; rx++) {
       foreTiles.push({x: rx, y: Active.y})
     }
-    for(let rx = Active.x-1; getTileState(rx, Active.y) != 'blocked' && rx >= 0; rx--) {
+    for(let rx = Active.x-1; getTileValue(rx, Active.y) != 'blocked' && rx >= 0; rx--) {
       backTiles.unshift({x: rx, y: Active.y})
     }
   }
   else {
-    for(let ry = Active.y; getTileState(Active.x, ry) != 'blocked' && ry < height; ry++) {
+    for(let ry = Active.y; getTileValue(Active.x, ry) != 'blocked' && ry < height; ry++) {
       foreTiles.push({x: Active.x, y: ry})
     }
-    for(let ry = Active.y-1; getTileState(Active.x, ry) != 'blocked' && ry >= 0; ry--) {
+    for(let ry = Active.y-1; getTileValue(Active.x, ry) != 'blocked' && ry >= 0; ry--) {
       backTiles.unshift({x: Active.x, y: ry})
     }
   }
   if (foreTiles.length == 1 && backTiles.length < 1) {
-    direction.value = direction.value == 'vertical' ? 'horizontal' : 'vertical'
+    horizontal.value = !horizontal.value
     return findWord()
   }
   return [...foreTiles, ...backTiles].sort((a,b) => a.x - b.x)
 }
 
-function getTileState (x: number, y: number) {
-  const isBlocked = blackTiles.findIndex(tile => tile.x === x && tile.y === y)
-  return isBlocked !== -1 ? 'blocked' : 'letter'
+function getTileValue (x: number, y: number) {
+  return cwTiles.find(tile => tile.x === x && tile.y === y)?.value
 }
 
 function getPos(evt: MouseEvent, canvas: HTMLCanvasElement) {
@@ -166,9 +168,17 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   ctx.stroke()
   // draw the grid -- e
   // draw the empty black tiles -- s
-  blackTiles.forEach(tile => {
-    ctx.fillStyle = '#00000088'
-    ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
+  cwTiles.forEach(tile => {
+    if (tile.value === ' ') {
+      ctx.fillStyle = '#00000088'
+      ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
+    }
+    else {
+      ctx.font = "32px sans-serif"
+      ctx.fillStyle = '#000000'
+      ctx.textAlign = 'center'
+      ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
+    }
   })
   // draw the empty black tiles -- e
 
@@ -179,12 +189,12 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   })
   // draw the selected word tiles -- e
 
-  letterTiles.forEach(tile => {
-    ctx.font = "32px sans-serif"
-    ctx.fillStyle = '#000000'
-    ctx.textAlign = 'center'
-    ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
-  })
+  // letterTiles.forEach(tile => {
+  //   ctx.font = "32px sans-serif"
+  //   ctx.fillStyle = '#000000'
+  //   ctx.textAlign = 'center'
+  //   ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
+  // })
   Cursor.draw()
   Active.draw()
 }
@@ -194,10 +204,9 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
 
 <template>
   <div class="tileset">
-    <toolbar :direction="direction" />
+    <toolbar :horizontal="horizontal" />
     <canvas :width="canvasSize.width" :height="canvasSize.height" id="tileset" tabindex="0" />
   </div>
-
 </template>
 
 <style lang="stylus" scoped>
