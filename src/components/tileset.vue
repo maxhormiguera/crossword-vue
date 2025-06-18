@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import {computed, eagerComputed, onMounted, reactive, ref} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import Toolbar from "@/components/toolbar.vue";
 
-interface Tile {
-  x: number, y: number, value: string
+interface TileType {
+  x: number,
+  y: number,
+  value?: string,
+  state?: 'hover' | 'active' | 'disabled' | 'blank' | 'filled'
 }
 
 const { width, height, tileSize } = defineProps({
@@ -12,19 +15,17 @@ const { width, height, tileSize } = defineProps({
   tileSize: { type: Number, default: 40 },
 })
 let canvasSize = { width: (tileSize * width) + 2, height: (tileSize * height) + 2 }
-let cwTiles:Tile[] = reactive((() => {
+let cwTiles:TileType[] = reactive((() => {
   const tiles = []
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
-      tiles.push({ x: x, y: y, value: '' });
+      tiles.push({ x: x, y: y, value: '', state: 'blank' });
     }
   }
   return tiles
 })())
 let cursorTile = { x: 0, y: 0 }
-const blackTiles = computed(() => {
-  return cwTiles.filter(tile => tile.value == ' ')
-})
+let activeTile = { x: 0, y: 0 }
 const horizontal = ref<Boolean>(true)
 let selectedWord:{x:number, y:number}[] = []
 
@@ -49,88 +50,82 @@ class Tile {
   }
 }
 
-const Cursor = new Tile(null, cursorTile.x, cursorTile.y, 'hover')
-const Active = new Tile(null, cursorTile.x, cursorTile.y, 'active')
-
 onMounted(() => {
   const canvas = document.getElementById('tileset') as HTMLCanvasElement
   if (canvas.getContext) {
     const ctx = canvas.getContext('2d')
-    Cursor.ctx = ctx
-    Active.ctx = ctx
+    // Cursor.ctx = ctx
+    // Active.ctx = ctx
     drawBackGround(canvas, ctx)
 
     canvas.addEventListener('mousemove', (evt: MouseEvent) => {
       const pos = getPos(evt, canvas)
-      Cursor.x = pos.x
-      Cursor.y = pos.y
+      // Cursor.x = pos.x
+      // Cursor.y = pos.y
+      const thisTile:TileType|undefined = getTile({x: pos.x, y: pos.y})
+      cursorTile.x = pos.x
+      cursorTile.y = pos.y
       drawBackGround (canvas, ctx)
     })
 
     canvas.addEventListener('click', (evt: MouseEvent) => {
       const pos = getPos(evt, canvas)
-      if (Active.x == pos.x && Active.y == pos.y) {
+      if (activeTile.x == pos.x && activeTile.y == pos.y) {
         horizontal.value = !horizontal.value
       }
-      Active.x = pos.x
-      Active.y = pos.y
-      if (getTileValue(Active.x, Active.y) !== 'blocked') {
+      activeTile.x = pos.x
+      activeTile.y = pos.y
+      if (getTile({x: activeTile.x, y: activeTile.y})?.value !== 'blocked') {
         selectedWord = findWord()
       }
       drawBackGround (canvas, ctx)
     })
 
     canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
-      const thisTile: Tile | undefined = cwTiles.find(({x, y}) => Active.x === x && Active.y === y)
-      console.log('::: evt.code ', evt.code)
+      const thisTile: TileType | undefined = cwTiles.find(({x, y}) => activeTile.x === x && activeTile.y === y)
+      console.log('::: evt.code evt.key', evt.code, evt.key)
+      let nextTile = horizontal.value ? {x: activeTile.x + 1, y: activeTile.y} : {x: activeTile.x, y: activeTile.y + 1}
       if (!thisTile) return // tile not found
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) {
-        const nextTile = evt.code === 'ArrowLeft' ? {x: (Active.x - 1), y: Active.y} :
-          evt.code === 'ArrowRight' ? { x: (Active.x + 1), y: Active.y } :
-          evt.code === 'ArrowUp' ? {x: Active.x, y: (Active.y - 1)} :
-            {x: Active.x, y: (Active.y + 1)}
-        const nextTileValue = getTileValue(nextTile.x, nextTile.y)
-        if (nextTileValue || nextTileValue === '') {
-          Active.x = nextTile.x
-          Active.y = nextTile.y
-        }
-      } else if (evt.code === 'Space') {
-        thisTile.value = ' '
+        nextTile = evt.code === 'ArrowLeft' ? {x: activeTile.x - 1, y: activeTile.y} :
+          evt.code === 'ArrowRight' ? { x: activeTile.x + 1, y: activeTile.y } :
+          evt.code === 'ArrowUp' ? {x: activeTile.x, y: activeTile.y - 1} :
+            {x: activeTile.x, y: activeTile.y + 1}
+      } else if (evt.code === 'Digit1' || evt.code === 'Numpad1') {
+        thisTile.value = '1'
+
       } else if (evt.code === `Key${evt.key.toUpperCase()}`) {
         thisTile.value = evt.key.toUpperCase()
-        moveTypingCursor()
+      }
+      const nextTileValue = getTile({x: nextTile.x, y: nextTile.y})?.value
+      if (nextTileValue || nextTileValue === '' || nextTileValue === ' ') {
+        activeTile.x = nextTile.x
+        activeTile.y = nextTile.y
+        selectedWord = findWord()
       }
       drawBackGround(canvas, ctx)
     })
   }
 })
 
-function moveTypingCursor() {
-  console.log('::: selectedWord ', selectedWord)
-  if (horizontal.value) {
-
-  }
-}
-
 function findWord() {
-  getTileValue(Active.x, Active.y)
   let foreTiles = []
   let backTiles = []
 
   if (horizontal.value) {
-    for(let rx = Active.x; getTileValue(rx, Active.y) != 'blocked' && rx < width; rx++) {
-      foreTiles.push({x: rx, y: Active.y})
+    for(let rx = activeTile.x; getTile({x: rx, y: activeTile.y})?.value != '1' && rx < width; rx++) {
+      foreTiles.push({x: rx, y: activeTile.y})
     }
-    for(let rx = Active.x-1; getTileValue(rx, Active.y) != 'blocked' && rx >= 0; rx--) {
-      backTiles.unshift({x: rx, y: Active.y})
+    for(let rx = activeTile.x-1; getTile({x: rx, y: activeTile.y})?.value != '1' && rx >= 0; rx--) {
+      backTiles.unshift({x: rx, y: activeTile.y})
     }
   }
   else {
-    for(let ry = Active.y; getTileValue(Active.x, ry) != 'blocked' && ry < height; ry++) {
-      foreTiles.push({x: Active.x, y: ry})
+    for(let ry = activeTile.y; getTile({x: activeTile.x, y: ry})?.value != '1' && ry < height; ry++) {
+      foreTiles.push({x: activeTile.x, y: ry})
     }
-    for(let ry = Active.y-1; getTileValue(Active.x, ry) != 'blocked' && ry >= 0; ry--) {
-      backTiles.unshift({x: Active.x, y: ry})
+    for(let ry = activeTile.y-1; getTile({x: activeTile.x, y: ry})?.value != '1' && ry >= 0; ry--) {
+      backTiles.unshift({x: activeTile.x, y: ry})
     }
   }
   if (foreTiles.length == 1 && backTiles.length < 1) {
@@ -140,8 +135,8 @@ function findWord() {
   return [...foreTiles, ...backTiles].sort((a,b) => a.x - b.x)
 }
 
-function getTileValue (x: number, y: number) {
-  return cwTiles.find(tile => tile.x === x && tile.y === y)?.value
+function getTile ({x, y}:TileType) {
+  return cwTiles.find(tile => tile.x === x && tile.y === y)
 }
 
 function getPos(evt: MouseEvent, canvas: HTMLCanvasElement) {
@@ -167,20 +162,6 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   ctx.strokeStyle = '#000000'
   ctx.stroke()
   // draw the grid -- e
-  // draw the empty black tiles -- s
-  cwTiles.forEach(tile => {
-    if (tile.value === ' ') {
-      ctx.fillStyle = '#00000088'
-      ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
-    }
-    else {
-      ctx.font = "32px sans-serif"
-      ctx.fillStyle = '#000000'
-      ctx.textAlign = 'center'
-      ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
-    }
-  })
-  // draw the empty black tiles -- e
 
   // draw the selected word tiles -- s
   selectedWord.forEach(tile => {
@@ -189,14 +170,30 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
   })
   // draw the selected word tiles -- e
 
-  // letterTiles.forEach(tile => {
-  //   ctx.font = "32px sans-serif"
-  //   ctx.fillStyle = '#000000'
-  //   ctx.textAlign = 'center'
-  //   ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
-  // })
-  Cursor.draw()
-  Active.draw()
+  // draw the tiles -- s
+  cwTiles.forEach(tile => {
+    if (tile.x === cursorTile.x && tile.y === cursorTile.y) {
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#f6a05a'
+      ctx.strokeRect((tile.x * tileSize) + 1, (tile.y * tileSize) + 1, tileSize, tileSize)
+    }
+    if (tile.x === activeTile.x && tile.y === activeTile.y) {
+      ctx.fillStyle = '#f6a05a66'
+      ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
+    }
+    if (tile.value === '1') {
+      ctx.fillStyle = '#00000088'
+      ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
+    }
+    else {
+      ctx.font = "32px sans-serif"
+      ctx.fillStyle = '#000000'
+      ctx.textAlign = 'center'
+      ctx.fillText(<string>tile.value, (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
+    }
+  })
+  // draw the tiles -- e
+
 }
 
 
