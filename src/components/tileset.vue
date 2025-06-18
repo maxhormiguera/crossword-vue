@@ -93,20 +93,20 @@ onMounted(() => {
     })
 
     canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
-      const key = evt.key
-      console.log('::: key ', key)
-      drawText(canvas, ctx, key)
-    })
+      if (evt.code === `Key${evt.key.toUpperCase()}`) {
 
+        moveTypingCursor()
+        drawBackGround (canvas, ctx)
+      }
+    })
   }
 })
 
-function drawText(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|null, text:string) {
-  console.log('::: text')
-  if (!ctx) return
-  ctx.font = "32px sans-serif"
-  ctx.fillStyle = '#000000'
-  ctx.fillText(text.toUpperCase(), (Active.x * tileSize) + (tileSize*0.2575), (Active.y * tileSize) + (tileSize*0.85))
+function moveTypingCursor() {
+  console.log('::: selectedWord ', selectedWord)
+  if (direction.value === 'horizontal') {
+
+  }
 }
 
 function findWord() {
@@ -177,8 +177,14 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
     ctx.fillStyle = '#00aa0044'
     ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
   })
-  // draw the empty black tiles -- e
+  // draw the selected word tiles -- e
 
+  letterTiles.forEach(tile => {
+    ctx.font = "32px sans-serif"
+    ctx.fillStyle = '#000000'
+    ctx.textAlign = 'center'
+    ctx.fillText(tile.value.toUpperCase(), (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
+  })
   Cursor.draw()
   Active.draw()
 }
