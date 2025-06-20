@@ -30,26 +30,6 @@ const horizontal = ref<Boolean>(true)
 let selectedWord:{x:number, y:number}[] = []
 
 console.log('::::: tiles ', cwTiles[0])
-
-class Tile {
-  constructor(public ctx:CanvasRenderingContext2D|null,
-              public x: number,
-              public y: number,
-              public state: 'hover' | 'active') {
-    this.ctx = ctx;
-    this.x = x;
-    this.y = y;
-    this.state = state;
-  }
-  draw () {
-    if (this.ctx) {
-      this.ctx.lineWidth = 2
-      this.ctx.strokeStyle = this.state == 'hover' ? '#f6a05a' : '#fd806c'
-      this.ctx.strokeRect((this.x * tileSize) + 1, (this.y * tileSize) + 1, tileSize, tileSize)
-    }
-  }
-}
-
 onMounted(() => {
   const canvas = document.getElementById('tileset') as HTMLCanvasElement
   if (canvas.getContext) {
@@ -75,33 +55,38 @@ onMounted(() => {
       }
       activeTile.x = pos.x
       activeTile.y = pos.y
-      if (getTile({x: activeTile.x, y: activeTile.y})?.value !== 'blocked') {
+      if (getTile(activeTile)?.value !== 'blocked') {
         selectedWord = findWord()
       }
       drawBackGround (canvas, ctx)
     })
 
     canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
-      const thisTile: TileType | undefined = cwTiles.find(({x, y}) => activeTile.x === x && activeTile.y === y)
-      console.log('::: evt.code evt.key', evt.code, evt.key)
+      const thisTile: TileType | undefined = getTile(activeTile)
       let nextTile = horizontal.value ? {x: activeTile.x + 1, y: activeTile.y} : {x: activeTile.x, y: activeTile.y + 1}
+      let moveActiveTile = false
       if (!thisTile) return // tile not found
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) {
         nextTile = evt.code === 'ArrowLeft' ? {x: activeTile.x - 1, y: activeTile.y} :
           evt.code === 'ArrowRight' ? { x: activeTile.x + 1, y: activeTile.y } :
           evt.code === 'ArrowUp' ? {x: activeTile.x, y: activeTile.y - 1} :
-            {x: activeTile.x, y: activeTile.y + 1}
+          {x: activeTile.x, y: activeTile.y + 1}
+        moveActiveTile = true
       } else if (evt.code === 'Digit1' || evt.code === 'Numpad1') {
         thisTile.value = '1'
+        moveActiveTile = true
 
       } else if (evt.code === `Key${evt.key.toUpperCase()}`) {
         thisTile.value = evt.key.toUpperCase()
+        moveActiveTile = true
       }
-      const nextTileValue = getTile({x: nextTile.x, y: nextTile.y})?.value
-      if (nextTileValue || nextTileValue === '' || nextTileValue === ' ') {
-        activeTile.x = nextTile.x
-        activeTile.y = nextTile.y
-        selectedWord = findWord()
+      if (moveActiveTile) {
+        const nextTileValue = getTile({x: nextTile.x, y: nextTile.y})?.value
+        if (nextTileValue || nextTileValue === '' || nextTileValue === ' ') {
+          activeTile.x = nextTile.x
+          activeTile.y = nextTile.y
+          selectedWord = findWord()
+        }
       }
       drawBackGround(canvas, ctx)
     })
