@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from "vue";
+import {onMounted, reactive, ref, watch} from "vue";
 import Toolbar from "@/components/toolbar.vue";
 
 interface TileType {
@@ -15,85 +15,14 @@ const { width, height, tileSize } = defineProps({
   tileSize: { type: Number, default: 40 },
 })
 let canvasSize = { width: (tileSize * width) + 2, height: (tileSize * height) + 2 }
-let cwTiles:TileType[] = reactive((() => {
-  const tiles = []
-  for (let x = 0; x < width; x++) {
-    for (let y = 0; y < height; y++) {
-      tiles.push({ x: x, y: y, value: '', state: 'blank' });
-    }
-  }
-  return tiles
-})())
+let cwTiles:TileType[] = reactive(setTiles('new'))
 let cursorTile = { x: 0, y: 0 }
 let activeTile = { x: 0, y: 0 }
 const horizontal = ref<Boolean>(true)
 let selectedWord:{x:number, y:number}[] = []
-
 console.log('::::: tiles ', cwTiles[0])
-onMounted(() => {
-  const canvas = document.getElementById('tileset') as HTMLCanvasElement
-  if (canvas.getContext) {
-    const ctx = canvas.getContext('2d')
-    // Cursor.ctx = ctx
-    // Active.ctx = ctx
-    drawBackGround(canvas, ctx)
 
-    canvas.addEventListener('mousemove', (evt: MouseEvent) => {
-      const pos = getPos(evt, canvas)
-      // Cursor.x = pos.x
-      // Cursor.y = pos.y
-      const thisTile:TileType|undefined = getTile({x: pos.x, y: pos.y})
-      cursorTile.x = pos.x
-      cursorTile.y = pos.y
-      drawBackGround (canvas, ctx)
-    })
-
-    canvas.addEventListener('click', (evt: MouseEvent) => {
-      const pos = getPos(evt, canvas)
-      if (activeTile.x == pos.x && activeTile.y == pos.y) {
-        horizontal.value = !horizontal.value
-      }
-      activeTile.x = pos.x
-      activeTile.y = pos.y
-      if (getTile(activeTile)?.value !== 'blocked') {
-        selectedWord = findWord()
-      }
-      drawBackGround (canvas, ctx)
-    })
-
-    canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
-      const thisTile: TileType | undefined = getTile(activeTile)
-      let nextTile = horizontal.value ? {x: activeTile.x + 1, y: activeTile.y} : {x: activeTile.x, y: activeTile.y + 1}
-      let moveActiveTile = false
-      if (!thisTile) return // tile not found
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) {
-        nextTile = evt.code === 'ArrowLeft' ? {x: activeTile.x - 1, y: activeTile.y} :
-          evt.code === 'ArrowRight' ? { x: activeTile.x + 1, y: activeTile.y } :
-          evt.code === 'ArrowUp' ? {x: activeTile.x, y: activeTile.y - 1} :
-          {x: activeTile.x, y: activeTile.y + 1}
-        moveActiveTile = true
-      } else if (evt.code === 'Digit1' || evt.code === 'Numpad1') {
-        thisTile.value = '1'
-        moveActiveTile = true
-
-      } else if (evt.code === `Key${evt.key.toUpperCase()}`) {
-        thisTile.value = evt.key.toUpperCase()
-        moveActiveTile = true
-      }
-      if (moveActiveTile) {
-        const nextTileValue = getTile({x: nextTile.x, y: nextTile.y})?.value
-        if (nextTileValue || nextTileValue === '' || nextTileValue === ' ') {
-          activeTile.x = nextTile.x
-          activeTile.y = nextTile.y
-          selectedWord = findWord()
-        }
-      }
-      drawBackGround(canvas, ctx)
-    })
-  }
-})
-
-function findWord() {
+function findWord(nextTile: TileType|null = null) {
   let foreTiles = []
   let backTiles = []
 
@@ -116,6 +45,12 @@ function findWord() {
   if (foreTiles.length == 1 && backTiles.length < 1) {
     horizontal.value = !horizontal.value
     return findWord()
+  }
+
+  // if nextTile is not null, move activeTile
+  if (nextTile) {
+    activeTile.x = nextTile.x
+    activeTile.y = nextTile.y
   }
   return [...foreTiles, ...backTiles].sort((a,b) => a.x - b.x)
 }
@@ -181,12 +116,88 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
 
 }
 
+onMounted(() => {
+  const canvas = document.getElementById('tileset') as HTMLCanvasElement
+  if (canvas.getContext) {
+    const ctx = canvas.getContext('2d')
+    // Cursor.ctx = ctx
+    // Active.ctx = ctx
+    drawBackGround(canvas, ctx)
+
+    canvas.addEventListener('mousemove', (evt: MouseEvent) => {
+      const pos = getPos(evt, canvas)
+      // Cursor.x = pos.x
+      // Cursor.y = pos.y
+      const thisTile:TileType|undefined = getTile({x: pos.x, y: pos.y})
+      cursorTile.x = pos.x
+      cursorTile.y = pos.y
+      drawBackGround (canvas, ctx)
+    })
+
+    canvas.addEventListener('click', (evt: MouseEvent) => {
+      const pos = getPos(evt, canvas)
+      if (activeTile.x == pos.x && activeTile.y == pos.y) {
+        horizontal.value = !horizontal.value
+      }
+      activeTile.x = pos.x
+      activeTile.y = pos.y
+      if (getTile(activeTile)?.value !== 'blocked') {
+        selectedWord = findWord()
+      }
+      drawBackGround (canvas, ctx)
+    })
+
+    canvas.addEventListener('keyup', (evt: KeyboardEvent) => {
+      const thisTile: TileType | undefined = getTile(activeTile)
+      let nextTile = horizontal.value ? {x: activeTile.x + 1, y: activeTile.y} : {x: activeTile.x, y: activeTile.y + 1}
+      let moveActiveTile = false
+      if (!thisTile) return // tile not found
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) {
+        nextTile = evt.code === 'ArrowLeft' ? {x: activeTile.x - 1, y: activeTile.y} :
+          evt.code === 'ArrowRight' ? { x: activeTile.x + 1, y: activeTile.y } :
+          evt.code === 'ArrowUp' ? {x: activeTile.x, y: activeTile.y - 1} :
+          {x: activeTile.x, y: activeTile.y + 1}
+        moveActiveTile = true
+      } else if (evt.code === 'Digit1' || evt.code === 'Numpad1') {
+        thisTile.value = '1'
+        moveActiveTile = true
+
+      } else if (evt.code === `Key${evt.key.toUpperCase()}`) {
+        thisTile.value = evt.key.toUpperCase()
+        moveActiveTile = true
+      }
+      if (moveActiveTile) {
+        const nextTileValue = getTile({x: nextTile.x, y: nextTile.y})?.value
+        if (nextTileValue || nextTileValue === '' || nextTileValue === ' ') {
+          activeTile.x = nextTile.x
+          activeTile.y = nextTile.y
+          selectedWord = findWord(nextTile)
+        }
+      }
+      drawBackGround(canvas, ctx)
+    })
+  }
+})
+
+function setTiles (action: 'new'|'clear') {
+  const tiles = []
+  console.log('::: new ')
+  if (action === 'new') {
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        tiles.push({ x: x, y: y, value: '', state: 'blank' });
+      }
+    }
+  }
+  return tiles
+}
+
 
 </script>
 
 <template>
   <div class="tileset">
-    <toolbar :horizontal="horizontal" />
+    <toolbar :horizontal="horizontal" @clear="setTiles('new')" />
     <canvas :width="canvasSize.width" :height="canvasSize.height" id="tileset" tabindex="0" />
   </div>
 </template>

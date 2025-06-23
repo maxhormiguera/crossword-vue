@@ -8,8 +8,9 @@ const { horizontal } = defineProps({
 
 <template>
 <div class="toolbar">
-  <icon :class="['direction-icon', `--${horizontal ? 'horizontal':'vertical'}`]" name="double-arrow" size="1.4rem" />
+  <icon :class="['direction-icon __icon', `--${horizontal ? 'horizontal':'vertical'}`]" name="double-arrow" size="1.4rem" />
   <button type="button" class="hint-btn">Hint</button>
+  <icon class="eraser-icon __icon" name="eraser" size="1.4rem" @click="$emit('clear')" />
 </div>
 </template>
 
@@ -25,6 +26,11 @@ const { horizontal } = defineProps({
     color var(--text-inverse-color)
     border-radius $border-radius-sm
     padding 0.35rem 0.55rem
+  .__icon
+    color white
+    background-color #fff3
+    border-radius 0.25rem
+    padding 0.325rem
   .direction-icon
     color white
     background-color #fff3
