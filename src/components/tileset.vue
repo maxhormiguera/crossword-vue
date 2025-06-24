@@ -106,10 +106,10 @@ function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|
       ctx.fillRect((tile.x * tileSize) + 2, (tile.y * tileSize) + 2, tileSize - 2, tileSize - 2)
     }
     else {
-      ctx.font = "32px sans-serif"
+      ctx.font = `${tileSize*0.75}px sans-serif`
       ctx.fillStyle = '#000000'
       ctx.textAlign = 'center'
-      ctx.fillText(<string>tile.value, (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.85))
+      ctx.fillText(<string>tile.value, (tile.x * tileSize) + (tileSize*0.5), (tile.y * tileSize) + (tileSize*0.825))
     }
   })
   // draw the tiles -- e
