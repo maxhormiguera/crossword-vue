@@ -4,6 +4,7 @@ import Icon from "@/components/icon.vue";
 const { horizontal } = defineProps({
   horizontal: { type: Boolean, default: true },
 })
+
 </script>
 
 <template>
@@ -25,13 +26,15 @@ const { horizontal } = defineProps({
     background-color var(--theme-color)
     border 1px solid var(--text-inverse-color)
     color var(--text-inverse-color)
-    border-radius $border-radius-sm
-    padding 0.35rem 0.55rem
+    border-radius $border-radius-md
+    padding 0.35rem 1.55rem
   .__icon
     color white
     background-color #fff3
-    border-radius 0.25rem
+    border-radius $border-radius-md
     padding 0.325rem
+    &:hover
+      box-shadow 0 0 0.75rem white
   .direction-icon
     color white
     background-color #fff3

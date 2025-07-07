@@ -1,10 +1,10 @@
 <script setup>
-import Tileset from "@/components/tileset.vue";
+import Tilemap from "@/components/tilemap.vue";
 </script>
 
 <template>
   <main>
-    <tileset :width="12" :height="12" :tile-size="36" />
+    <tilemap :width="16" :height="16" :tile-size="36" />
   </main>
 </template>
 
