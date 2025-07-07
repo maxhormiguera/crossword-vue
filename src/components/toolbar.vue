@@ -8,9 +8,9 @@ const { horizontal } = defineProps({
 
 <template>
 <div class="toolbar">
-  <icon :class="['direction-icon __icon', `--${horizontal ? 'horizontal':'vertical'}`]" name="double-arrow" size="1.4rem" />
+  <icon :class="['direction-icon __icon', `--${horizontal ? 'horizontal':'vertical'}`]" name="double-arrow" size="2.4rem" />
+  <icon class="eraser-icon __icon" name="eraser" size="2.4rem" @click="$emit('clear')" />
   <button type="button" class="hint-btn">Hint</button>
-  <icon class="eraser-icon __icon" name="eraser" size="1.4rem" @click="$emit('clear')" />
 </div>
 </template>
 
@@ -20,6 +20,7 @@ const { horizontal } = defineProps({
   border-radius $border-radius-sm $border-radius-sm 0 0
   background-color var(--theme-color)
   flexbox center flex-start row 0.5rem
+  width 100%
   .hint-btn
     background-color var(--theme-color)
     border 1px solid var(--text-inverse-color)

@@ -4,7 +4,6 @@ import Tileset from "@/components/tileset.vue";
 
 <template>
   <main>
-    Run the tiles
     <tileset :width="12" :height="12" :tile-size="36" />
   </main>
 </template>

@@ -14,7 +14,7 @@ const { width, height, tileSize } = defineProps({
   height: { type: Number, default: 6 },
   tileSize: { type: Number, default: 40 },
 })
-let canvasSize = { width: (tileSize * width) + 2, height: (tileSize * height) + 2 }
+let canvasSize = ref({ width: (tileSize * width) + 2, height: (tileSize * height) + 2 })
 let cwTiles:TileType[] = reactive(setTiles('new'))
 let cursorTile = { x: 0, y: 0 }
 let activeTile = { x: 0, y: 0 }
@@ -68,7 +68,7 @@ function getPos(evt: MouseEvent, canvas: HTMLCanvasElement) {
 
 function drawBackGround(canvas:HTMLCanvasElement, ctx: CanvasRenderingContext2D|null) {
   if (!ctx) return
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
   // draw the grid -- s
   for (let x = 1; x <= canvas.width; x=x+tileSize) {
     ctx.moveTo(x, 0)
@@ -157,6 +157,7 @@ onMounted(() => {
           evt.code === 'ArrowRight' ? { x: activeTile.x + 1, y: activeTile.y } :
           evt.code === 'ArrowUp' ? {x: activeTile.x, y: activeTile.y - 1} :
           {x: activeTile.x, y: activeTile.y + 1}
+        horizontal.value = ['ArrowLeft', 'ArrowRight'].includes(evt.code)
         moveActiveTile = true
       } else if (evt.code === 'Digit1' || evt.code === 'Numpad1') {
         thisTile.value = '1'
@@ -196,12 +197,12 @@ function setTiles (action: 'new'|'clear') {
 </script>
 
 <template>
-  <div class="tileset">
-    <toolbar :horizontal="horizontal" @clear="setTiles('new')" />
-    <canvas :width="canvasSize.width" :height="canvasSize.height" id="tileset" tabindex="0" />
+  <div class="tileset" :style="`width : ${canvasSize.width}px`">
+    <toolbar :horizontal="horizontal"
+             @clear="setTiles('new')"/>
+    <canvas class="tiles" :width="canvasSize.width" :height="canvasSize.height" id="tileset" tabindex="0" />
   </div>
 </template>
 
 <style lang="stylus" scoped>
-
 </style>
